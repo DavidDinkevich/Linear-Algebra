@@ -50,40 +50,6 @@ void zeroVector(double *v, int n) {
 	}
 }
 
-void printVector(double *vector, int n, bool withParenthesis) {
-	if (withParenthesis)
-		printf("(");
-	for (int i = 0; i < n; i++) {
-		printf("%0.3f", smoothenZero(vector[i]));
-		if (i < n-1)
-			printf(" ");
-	}
-	if (withParenthesis)
-		printf(")");
-}
-
-void printRowsAsSet(double **matrix, int n, int m) {
-	printf("{\n");
-	for (int i = 0; i < n; i++) {
-		printf("\t");
-		printVector(matrix[i], m, true);
-		// if (i < n - 1)
-		// 	printf(", ");
-		printf("\n");
-	}
-	printf("}");
-}
-
-int inputVector(double *v, int n) {
-	//printInputPrefix();
-	for (int c = 0; c < n; c++) {
-		if (1 != scanf("%lf", &v[c])) {
-			return false;
-		}
-	}
-	return true;
-}
-
 double dot(double *vector1, double *vector2, int n) {
 	double sum = 0;
 	for (int i = 0; i < n; i++) {
@@ -138,30 +104,6 @@ double** copyMatrix(double **mat, int n, int m) {
 		setVector(copy[r], mat[r], m);
 	}
 	return copy;
-}
-
-void printMatrix(double **matrix, int n, int m) {
-	for (int i = 0; i < n; i++) {
-		printVector(matrix[i], m, false);
-		printf("\n");
-	}
-}
-
-bool inputMatrixDims(int *n, int *m) {
-	int res = scanf("%d%d", n, m);
-	if (res != 2 || !(*n >= 1 && *m >= 1)) {
-		printf("Invalid matrix dimensions.\n");
-		return false;	
-	}
-	return true;
-}
-
-int inputMatrix(double **mat, int n, int m) {
-	for (int r = 0; r < n; r++) {
-		if (!inputVector(mat[r], m))
-			return false;
-	}
-	return true;
 }
 
 void swapRows(double **matrix, int m, int row1, int row2) {
@@ -361,11 +303,71 @@ double** getNullSpace(double **mat, int n, int m, int *dimNullSpc) {
 
 }
 
+/*
+	PRINTING
+*/
+
+void printVector(double *vector, int n, bool withParenthesis) {
+	if (withParenthesis)
+		printf("(");
+	for (int i = 0; i < n; i++) {
+		printf("%0.3f", smoothenZero(vector[i]));
+		if (i < n-1)
+			printf(" ");
+	}
+	if (withParenthesis)
+		printf(")");
+}
+
+void printMatrix(double **matrix, int n, int m) {
+	for (int i = 0; i < n; i++) {
+		printVector(matrix[i], m, false);
+		printf("\n");
+	}
+}
+
+void printRowsAsSet(double **matrix, int n, int m) {
+	printf("{\n");
+	for (int i = 0; i < n; i++) {
+		printf("\t");
+		printVector(matrix[i], m, true);
+		// if (i < n - 1)
+		// 	printf(", ");
+		printf("\n");
+	}
+	printf("}");
+}
 
 /*
 	DIALOGS
 */
 
+int inputVector(double *v, int n) {
+	//printInputPrefix();
+	for (int c = 0; c < n; c++) {
+		if (1 != scanf("%lf", &v[c])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool inputMatrixDims(int *n, int *m) {
+	int res = scanf("%d%d", n, m);
+	if (res != 2 || !(*n >= 1 && *m >= 1)) {
+		printf("Invalid matrix dimensions.\n");
+		return false;	
+	}
+	return true;
+}
+
+int inputMatrix(double **mat, int n, int m) {
+	for (int r = 0; r < n; r++) {
+		if (!inputVector(mat[r], m))
+			return false;
+	}
+	return true;
+}
 
 double** runMatrixInputDialog(int *n, int *m) {
 	printf("Input matrix dimensions:\n");
@@ -531,7 +533,6 @@ void runNullSpaceDialog() {
 	freeMatrix(nullSpace, dimNullSpc);	
 	freeMatrix(mat, n);
 }
-
 
 int main() {
 	printf("Welcome to Matrix Master!\n");
