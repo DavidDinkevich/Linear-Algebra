@@ -325,6 +325,26 @@ double** getNullSpace(double **mat, int n, int m, int *dimNullSpc) {
 	return nullSpcBasis;
 }
 
+void getQRDecomp(double **mat, int n, double ***Q, double ***R) {
+	double **transp = transpose(mat, n, n);
+	double **orthogonalized = gramSchmidt(transp, n, n, true);
+	*Q = transpose(orthogonalized, n, n);
+	// Calculate R:
+	*R = createMatrix(n, n);
+	for (int r = 0; r < n; r++) {
+		for (int c = 0; c < n; c++) {
+			if (c < r)
+				(*R)[r][c] = 0;
+			else {
+				(*R)[r][c] = dot(orthogonalized[r], transp[c], n);
+			}
+		}
+	}
+	freeMatrix(transp, n);
+	freeMatrix(orthogonalized, n);
+}
+
+
 /*
 	PRINTING
 */
@@ -590,6 +610,30 @@ void runMultMatricesDialog() {
 	freeMatrix(prod, n);
 }
 
+void runQRDecompDialog() {
+	int n, m;
+	double **matrix = runMatrixInputDialog(&n, &m);
+	if (matrix == NULL) {
+		return;
+	}
+	if (n != m) {
+		printf("Must input square matrix.\n");
+	} else {
+		double ***Q, ***R;
+		getQRDecomp(matrix, n, Q, R);
+		printf("Q:\n");
+		printMatrix(*Q, n, n);
+		printf("R:\n");
+		printMatrix(*R, n, n);
+		freeMatrix(*Q, n);
+		freeMatrix(*R, n);
+		free(Q);
+		free(R);
+	}
+	freeMatrix(matrix, n);
+
+}
+
 
 int main() {
 	printf("Welcome to Matrix Master!\n");
@@ -606,6 +650,7 @@ int main() {
 		printf("6. Orthogonal Projection\n");
 		printf("7. Gram-Schmidt\n");
 		printf("8. Mult Matrices\n");
+		printf("9. QR Decomposition\n");
 		printf("0: Quit\n");
 		printf("Input:\n");
 		input = readInt();
@@ -619,6 +664,7 @@ int main() {
 			case 6: runOrthoProjectionDialog(); break;
 			case 7: runGramSchmidtDialog(); break;
 			case 8: runMultMatricesDialog(); break;
+			case 9: runQRDecompDialog(); break;
 			case 0: break;
 			default:
 				printf("Invalid input. Try again:\n");
