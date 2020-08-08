@@ -210,6 +210,24 @@ double rowReductionDet(double **mat, int n) {
 }
 
 /*
+	Multiplies matrices of dimensions: (n x p)(p x r)
+*/
+double** multMatrices(double **m1, double **m2, int n, int p, int r) {
+	double **res = createMatrix(n, r);
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < r; j++) {
+			double entry = 0;
+			for (int k = 0; k < p; k++) {
+				entry += m1[i][k] * m2[k][j];
+			}
+			res[i][j] = entry;
+		}
+	}
+	return res;
+}
+
+
+/*
 	Params:
 	- vector: vector to project
 	- orthoBasis: matrix containing the basis vectors of the space
@@ -361,7 +379,7 @@ bool inputMatrixDims(int *n, int *m) {
 	return true;
 }
 
-int inputMatrix(double **mat, int n, int m) {
+bool inputMatrix(double **mat, int n, int m) {
 	for (int r = 0; r < n; r++) {
 		if (!inputVector(mat[r], m))
 			return false;
@@ -534,6 +552,37 @@ void runNullSpaceDialog() {
 	freeMatrix(mat, n);
 }
 
+void runMultMatricesDialog() {
+	int n, p, r;
+	double **mat1 = runMatrixInputDialog(&n, &p);
+	if (mat1 == NULL)
+		return;
+	int temp;
+	bool error = false;
+	printf("Input second matrix dimensions:\n");
+	printInputPrefix();
+	if (!inputMatrixDims(&temp, &r)) {
+		error = true;
+	}
+	else if (temp != p) {
+		printf("Matrices of these sizes cannot be multiplied.\n");
+		error = true;
+	}
+	if (error)
+		return;
+	double **mat2 = createMatrix(p, r);
+	printf("Input second matrix:\n");
+	if (!inputMatrix(mat2, p, r)) {
+		freeMatrix(mat1, n);
+		return;
+	}
+
+	double **prod = multMatrices(mat1, mat2, n, p, r);
+	printf("Product:\n");
+	printMatrix(prod, n, r);
+}
+
+
 int main() {
 	printf("Welcome to Matrix Master!\n");
 
@@ -548,6 +597,7 @@ int main() {
 		printf("5. Adjoint\n");
 		printf("6. Orthogonal Projection\n");
 		printf("7. Gram-Schmidt\n");
+		printf("8. Mult Matrices\n");
 		printf("0: Quit\n");
 		printf("Input:\n");
 		input = readInt();
@@ -560,6 +610,7 @@ int main() {
 			case 5: runAdjointDialog(); break;
 			case 6: runOrthoProjectionDialog(); break;
 			case 7: runGramSchmidtDialog(); break;
+			case 8: runMultMatricesDialog(); break;
 			case 0: break;
 			default:
 				printf("Invalid input. Try again:\n");
