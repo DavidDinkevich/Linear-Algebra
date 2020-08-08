@@ -553,33 +553,46 @@ void runNullSpaceDialog() {
 }
 
 void runMultMatricesDialog() {
+	// Matrices: (nxp)(pxr)
 	int n, p, r;
+	// Input first matrix
 	double **mat1 = runMatrixInputDialog(&n, &p);
 	if (mat1 == NULL)
 		return;
+	// Number of rows in second matrix: must = p
 	int temp;
-	bool error = false;
+	bool error = false; // Any input errors
+	// Input second matrix dimensions
 	printf("Input second matrix dimensions:\n");
 	printInputPrefix();
 	if (!inputMatrixDims(&temp, &r)) {
 		error = true;
 	}
-	else if (temp != p) {
+	else if (temp != p) { // If dimensions are invalid
 		printf("Matrices of these sizes cannot be multiplied.\n");
 		error = true;
 	}
+	// Exit if any errors
 	if (error)
 		return;
+	printf("Matrix dimensions: %dx%d\n", p, r);
+	// Input second matrix
 	double **mat2 = createMatrix(p, r);
 	printf("Input second matrix:\n");
 	if (!inputMatrix(mat2, p, r)) {
 		freeMatrix(mat1, n);
 		return;
 	}
-
+	printf("Read matrix:\n");
+	printMatrix(mat2, p, r);
+	// Compute and print product
 	double **prod = multMatrices(mat1, mat2, n, p, r);
 	printf("Product:\n");
 	printMatrix(prod, n, r);
+	// Release memory
+	freeMatrix(mat1, n);
+	freeMatrix(mat2, p);
+	freeMatrix(prod, n);
 }
 
 
