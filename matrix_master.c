@@ -249,12 +249,17 @@ double* proj(double *vector, double **orthoBasis, int n, int m) {
 	return result;
 }
 
-double** gramSchmidt(double **linIndSet, int n, int m) {
+double** gramSchmidt(double **linIndSet, int n, int m, bool normVectors) {
 	double **copy = copyMatrix(linIndSet, n, m);
 	for (int i = 1; i < n; i++) {
 		double *prj = proj(linIndSet[i], copy, i, m);
 		addVectors(copy[i], prj, m, -1);
 		free(prj);
+	}
+	if (normVectors) {
+		for (int r = 0; r < n; r++) {
+			normalizeVector(copy[r], m);
+		}
 	}
 	return copy;
 }
@@ -318,7 +323,6 @@ double** getNullSpace(double **mat, int n, int m, int *dimNullSpc) {
 	freeMatrix(transp, m); // m is num rows of the transpose
 
 	return nullSpcBasis;
-
 }
 
 /*
@@ -505,6 +509,10 @@ void runGramSchmidtDialog() {
 	printf("Input the size of the set:\n");
 	int setLen = readInt();
 
+	printf("Normalize vectors? (y/n): ");
+	char answer;
+	scanf(" %c", &answer);
+
 	printf("Input a linearly independent set of vectors:\n");
 	double **set = createMatrix(setLen, vecLen);
 	for (int i = 0; i < setLen; i++) {
@@ -515,24 +523,11 @@ void runGramSchmidtDialog() {
 	printRowsAsSet(set, setLen, vecLen);
 	printf("\n");
 
-	double **orthogonalized = gramSchmidt(set, setLen, vecLen);
+	double **orthogonalized = gramSchmidt(set, setLen, vecLen, answer == 'y');
 	printf("Orthogonalized:\n");
 	printRowsAsSet(orthogonalized, setLen, vecLen);
 	printf("\n");
-
-	printf("Normalize vectors? (y/n): ");
-	char answer;
-	scanf(" %c", &answer);
 	
-	if (answer == 'y') {
-		for (int r = 0; r < setLen; r++) {
-			normalizeVector(orthogonalized[r], vecLen);
-		}
-		printf("Normalized:\n");
-		printRowsAsSet(orthogonalized, setLen, vecLen);
-		printf("\n");
-	}
-
 	freeMatrix(set, setLen);
 	freeMatrix(orthogonalized, setLen);
 }
