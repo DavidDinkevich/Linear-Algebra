@@ -650,7 +650,8 @@ void runQRDecompDialog() {
 	if (n != m) {
 		printf("Must input square matrix.\n");
 	} else {
-		double ***Q, ***R;
+		double ***Q = malloc(sizeof(double **));
+		double ***R = malloc(sizeof(double **));
 		getQRDecomp(matrix, n, Q, R);
 		printf("Q:\n");
 		printMatrix(*Q, n, n);
