@@ -319,7 +319,7 @@ double** getNullSpace(double **mat, int n, int m, int *dimNullSpc) {
 	}
 
 	// Row reduce matrix. All the pivotless columns are located on the right
-	// of the matrix
+	// of the matrix.
 	rref(mat, n, m);
 	// Get dimension of null space
 	*dimNullSpc = m - rnk;
@@ -413,6 +413,17 @@ double *getEigenvalues(double **mat, int n) {
 	if (finalTriangularMat != mat)
 		freeMatrix(finalTriangularMat, n);
 	return spectrum;
+}
+
+double **getEigenspace(double eigval, double **mat, int n, int *geometricMultiplicity) {
+	double **copy = copyMatrix(mat, n, n);
+	// Subtract eigenvalue from main diagonal
+	for (int i = 0; i < n; i++) {
+		copy[i][i] -= eigval;
+	}
+	double **eigspace = getNullSpace(copy, n, n, geometricMultiplicity);
+	freeMatrix(copy, n);
+	return eigspace;
 }
 
 
@@ -722,13 +733,13 @@ void runEigenvaluesDialog() {
 		printf("Must input square matrix.\n");
 	} else {
 		double *spectrum = getEigenvalues(matrix, n);
-		printf("Eigenvalues:\n");
+		printf("\nEigenvalues:\n");
 
 		int sumAlgMults = 0; // Sum of the algebraic multiplicities (in the end = n)
 
 		while (sumAlgMults < n) {
+			// GET ALGEBRAIC MULTIPLICITY
 			int algebraicMultiplcity = 0;
-			// Get algebraic multiplicity
 			for (int j = 0; j < n; j++) {
 				// spectrum[sumAlgMults] because we want to skip repititions
 				// of the same eigenvalues
@@ -736,8 +747,27 @@ void runEigenvaluesDialog() {
 					algebraicMultiplcity++;
 				}
 			}
-			printf("\t%0.3f (algebraic multiplicity = %d)\n", 
-				spectrum[sumAlgMults], algebraicMultiplcity);
+
+			// GET EIGENSPACE
+			int geometricMultiplicity;
+			double **eigenspace = getEigenspace(spectrum[sumAlgMults],
+											matrix, n, &geometricMultiplicity);
+
+			// PRINT EIGENVALUE, MULTIPLICITIES, AND EIGENSPACE
+			printf("\t%0.3f\n", smoothenZero(spectrum[sumAlgMults]));
+			printf("\t\tAlgebraic Multiplicity: %d\n", algebraicMultiplcity);
+			printf("\t\tGeometric Multiplicity: %d\n", geometricMultiplicity);
+			// Print eigenspace basis
+			printf("\t\t%0.3f - eigenspace:\n", spectrum[sumAlgMults]);
+				printf("\t\tspan {\n");
+			for (int i = 0; i < geometricMultiplicity; i++) {
+				printf("\t\t\t");
+				printVector(eigenspace[i], m, true);
+				printf("\n");
+			}
+			printf("\t\t}\n\n");
+
+			freeMatrix(eigenspace, geometricMultiplicity);
 
 			sumAlgMults += algebraicMultiplcity;
 		}
