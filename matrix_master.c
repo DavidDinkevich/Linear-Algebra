@@ -574,6 +574,13 @@ void runGramSchmidtDialog() {
 	printRowsAsSet(set, setLen, vecLen);
 	printf("\n");
 
+	// Verify that vectors are linearly independent
+	if (rank(set, setLen, vecLen) != fmin(setLen, vecLen)) {
+		freeMatrix(set, setLen);
+		printf("ERROR: Vectors are not linearly independent.\n");
+		return;
+	}
+
 	double **orthogonalized = gramSchmidt(set, setLen, vecLen, answer == 'y');
 	printf("Orthogonalized:\n");
 	printRowsAsSet(orthogonalized, setLen, vecLen);
@@ -663,7 +670,6 @@ void runQRDecompDialog() {
 		free(R);
 	}
 	freeMatrix(matrix, n);
-
 }
 
 void runEigenvaluesDialog() {
