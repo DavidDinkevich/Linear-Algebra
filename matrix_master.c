@@ -86,6 +86,18 @@ void addVectors(double *v1, double *v2, int n, double scalar) {
 	}
 }
 
+/*
+	Get whether all entries in the given vector equal the given
+	constant "c"
+*/
+bool allEntriesEqual(double c, double *vec, int n) {
+	for (int i = 0; i < n; i++) {
+		if (vec[i] != c)
+			return false;
+	}
+	return true;
+}
+
 
 // MATRICES
 
@@ -118,13 +130,23 @@ int ref(double **matrix, int n, int m) {
 	int numRowSwaps = 0;
 	for (int c = 0; c < m; c++) {
 		for (int r = c + 1; r < n; r++) {
+			// Try to find row with coef and swap
 			if (matrix[c][c] == 0 && matrix[r][c] != 0) {
 				swapRows(matrix, m, r, c);
 				++numRowSwaps;
 			}
+			// Zero coefs of other rows in this column
 			else if (matrix[r][c] != 0) {
 				addVectors(matrix[r], matrix[c], m, - matrix[r][c] / matrix[c][c]);
 			}
+		}
+	}
+	// Move zero rows to bottom of matrix
+	for (int r = 0; r < n-1; r++) {
+		// If zero row
+		if (allEntriesEqual(0, matrix[r], m)) {
+			swapRows(matrix, m, r, r+1);
+			++numRowSwaps;
 		}
 	}
 	return numRowSwaps;
