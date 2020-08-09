@@ -226,7 +226,6 @@ double** multMatrices(double **m1, double **m2, int n, int p, int r) {
 	return res;
 }
 
-
 /*
 	Params:
 	- vector: vector to project
@@ -342,6 +341,38 @@ void getQRDecomp(double **mat, int n, double ***Q, double ***R) {
 	}
 	freeMatrix(transp, n);
 	freeMatrix(orthogonalized, n);
+}
+
+double *getEigenvalues(double **mat, int n) {
+	double **Ai = mat;
+
+	for (int k = 0; k < 20; k++) {
+		double ***Qi = malloc(sizeof(double **));
+		double ***Ri = malloc(sizeof(double **));
+		getQRDecomp(Ai, n, Qi, Ri);
+		freeMatrix(*Ri, n); free(Ri); // Toss R because we don't need it
+
+		double **transpQi = transpose(*Qi, n, n);
+		double **tempAi = Ai;
+		// Multiply Ai from the left by Qi*
+		Ai = multMatrices(transpQi, Ai, n, n, n);
+		if (k > 0)
+			freeMatrix(tempAi, n);
+		freeMatrix(transpQi, n);
+		tempAi = Ai;
+		// Multiply Ai from the right by Qi
+		Ai = multMatrices(Ai, *Qi, n, n, n);
+		freeMatrix(tempAi, n);
+		freeMatrix(*Qi, n);
+		free(Qi);
+	}
+	// Generate spectrum vector (diagonal of Ai)
+	double *spectrum = createVector(n);
+	for (int i = 0; i < n; i++) {
+		spectrum[i] = Ai[i][i];
+	}
+	freeMatrix(Ai, n);
+	return spectrum;
 }
 
 
@@ -634,6 +665,40 @@ void runQRDecompDialog() {
 
 }
 
+void runEigenvaluesDialog() {
+	int n, m;
+	double **matrix = runMatrixInputDialog(&n, &m);
+	if (matrix == NULL) {
+		return;
+	}
+	if (n != m) {
+		printf("Must input square matrix.\n");
+	} else {
+		double *spectrum = getEigenvalues(matrix, n);
+		printf("Eigenvalues:\n");
+
+		int sumAlgMults = 0; // Sum of the algebraic multiplicities (in the end = n)
+
+		while (sumAlgMults < n) {
+			int algebraicMultiplcity = 0;
+			// Get algebraic multiplicity
+			for (int j = 0; j < n; j++) {
+				// spectrum[sumAlgMults] because we want to skip repititions
+				// of the same eigenvalues
+				if (spectrum[sumAlgMults] == spectrum[j]) {
+					algebraicMultiplcity++;
+				}
+			}
+			printf("\t%0.3f (algebraic multiplicity = %d)\n", 
+				spectrum[sumAlgMults], algebraicMultiplcity);
+
+			sumAlgMults += algebraicMultiplcity;
+		}
+
+		free(spectrum);
+	}
+	freeMatrix(matrix, n);
+}
 
 int main() {
 	printf("Welcome to Matrix Master!\n");
@@ -651,6 +716,7 @@ int main() {
 		printf("7. Gram-Schmidt\n");
 		printf("8. Mult Matrices\n");
 		printf("9. QR Decomposition\n");
+		printf("10. Eigenvalues\n");
 		printf("0: Quit\n");
 		printf("Input:\n");
 		input = readInt();
@@ -665,6 +731,7 @@ int main() {
 			case 7: runGramSchmidtDialog(); break;
 			case 8: runMultMatricesDialog(); break;
 			case 9: runQRDecompDialog(); break;
+			case 10: runEigenvaluesDialog(); break;
 			case 0: break;
 			default:
 				printf("Invalid input. Try again:\n");
