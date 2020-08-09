@@ -183,6 +183,30 @@ int rank(double **mat, int n, int m) {
 	return numPivots;
 }
 
+bool isUpperTriangular(double **mat, int n) {
+	for (int r = 1; r < n; r++) {
+		for (int c = 0; c < r; c++) {
+			if (mat[r][c] != 0)
+				return false;
+		}
+	}
+	return true;
+}
+
+bool isLowerTriangular(double **mat, int n) {
+	for (int c = 1; c < n; c++) {
+		for (int r = 0; r < c; r++) {
+			if (mat[r][c] != 0)
+				return false;
+		}
+	}
+	return true;
+}
+
+bool isTriangular(double **mat, int n) {
+	return isUpperTriangular(mat, n) || isLowerTriangular(mat, n);
+}
+
 double** createMinor(double **mat, int n, int m, int i, int j) {
 	double **minor = malloc(sizeof(double*) * (n-1));
 	for (int r = 0, offsetR = 0; r < n-1; r++) {
@@ -343,35 +367,51 @@ void getQRDecomp(double **mat, int n, double ***Q, double ***R) {
 	freeMatrix(orthogonalized, n);
 }
 
+/*
+	Precondition: all eigenvalues of matrix are real
+*/
 double *getEigenvalues(double **mat, int n) {
-	double **Ai = mat;
+	double **finalTriangularMat = mat;
 
-	for (int k = 0; k < 20; k++) {
-		double ***Qi = malloc(sizeof(double **));
-		double ***Ri = malloc(sizeof(double **));
-		getQRDecomp(Ai, n, Qi, Ri);
-		freeMatrix(*Ri, n); free(Ri); // Toss R because we don't need it
+	// If the matrix is NOT triangular, execute QR algorithm. Otherwise
+	// eigenvalues are the diagonal entries.
+	if (!isTriangular(mat, n)) {
+		double **Ai = mat;
 
-		double **transpQi = transpose(*Qi, n, n);
-		double **tempAi = Ai;
-		// Multiply Ai from the left by Qi*
-		Ai = multMatrices(transpQi, Ai, n, n, n);
-		if (k > 0)
+		for (int k = 0; k < 20; k++) {
+			double ***Qi = malloc(sizeof(double **));
+			double ***Ri = malloc(sizeof(double **));
+			getQRDecomp(Ai, n, Qi, Ri);
+			// Toss R because we don't need it
+			freeMatrix(*Ri, n); free(Ri);
+
+			double **transpQi = transpose(*Qi, n, n);
+			double **tempAi = Ai;
+			// Multiply Ai from the left by Qi*
+			Ai = multMatrices(transpQi, Ai, n, n, n);
+			if (k > 0)
+				freeMatrix(tempAi, n);
+			freeMatrix(transpQi, n);
+			tempAi = Ai;
+			// Multiply Ai from the right by Qi
+			Ai = multMatrices(Ai, *Qi, n, n, n);
 			freeMatrix(tempAi, n);
-		freeMatrix(transpQi, n);
-		tempAi = Ai;
-		// Multiply Ai from the right by Qi
-		Ai = multMatrices(Ai, *Qi, n, n, n);
-		freeMatrix(tempAi, n);
-		freeMatrix(*Qi, n);
-		free(Qi);
+			freeMatrix(*Qi, n);
+			free(Qi);
+		}
+		// Update
+		finalTriangularMat = Ai;
 	}
-	// Generate spectrum vector (diagonal of Ai)
+
+	// Generate spectrum vector (diagonal of finalTriangularMat)
 	double *spectrum = createVector(n);
 	for (int i = 0; i < n; i++) {
-		spectrum[i] = Ai[i][i];
+		spectrum[i] = finalTriangularMat[i][i];
 	}
-	freeMatrix(Ai, n);
+	// If we executed the QR algorithm, we need to free the newly
+	// generated triangular matrix
+	if (finalTriangularMat != mat)
+		freeMatrix(finalTriangularMat, n);
 	return spectrum;
 }
 
