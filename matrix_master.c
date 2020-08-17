@@ -185,15 +185,26 @@ int rank(double **mat, int n, int m) {
 
 void rref(double **matrix, int n, int m) {
 	ref(matrix, n, m); // Reduce
+	int rnk = rank(matrix, n, m);
 	
-	for (int c = fmin(n, m) - 1; c >= 0; c--) {
-		if (smoothenZero(matrix[c][c]) == 0) {
-			continue;
+	// Start at first element of last non-zero row
+	int pivotR = rnk-1, pivotC = 0;
+
+	while (pivotR >= 0) {
+		// NO PIVOT AT (pivotR, pivotC)
+		if (smoothenZero(matrix[pivotR][pivotC]) == 0) {
+			pivotC = (pivotC + 1) % m; // Move c to the right
 		}
-		multVector(matrix[c], m, 1 / matrix[c][c]);
-		for (int r = c - 1; r >= 0; r--) {
-			double scalar = - matrix[r][c] / matrix[c][c];
-			addVectors(matrix[r], matrix[c], m, scalar);
+		// PIVOT EXISTS
+		else {
+			// Divide row by pivot
+			multVector(matrix[pivotR], m, 1 / matrix[pivotR][pivotC]);
+			for (int r = pivotR - 1; r >= 0; r--) {
+				addVectors(matrix[r], matrix[pivotR], m, - matrix[r][pivotC]);
+			}
+			// Move to next starting pivot location
+			pivotR--;
+			pivotC = 0;
 		}
 	}
 }
