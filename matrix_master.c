@@ -128,25 +128,37 @@ void swapRows(double **matrix, int m, int row1, int row2) {
 
 int ref(double **matrix, int n, int m) {
 	int numRowSwaps = 0;
-	for (int c = 0; c < m; c++) {
-		for (int r = c + 1; r < n; r++) {
-			// Try to find row with coef and swap
-			if (matrix[c][c] == 0 && matrix[r][c] != 0) {
-				swapRows(matrix, m, r, c);
-				++numRowSwaps;
+
+	int pivotR = 0, pivotC = 0;
+	while (pivotR < n && pivotC < n) {		
+		// NO PIVOT AT (pivotR, pivotC)
+		if (matrix[pivotR][pivotC] == 0) {
+			// Try to find row with coef in same col and swap
+			bool foundAltPivot = false;
+			for (int r = pivotR + 1; r < n; r++) {
+				if (matrix[r][pivotC] != 0) {
+					foundAltPivot = true;
+					swapRows(matrix, m, pivotR, r);
+					++numRowSwaps;
+					break;
+				}
 			}
-			// Zero coefs of other rows in this column
-			else if (matrix[r][c] != 0) {
-				addVectors(matrix[r], matrix[c], m, - matrix[r][c] / matrix[c][c]);
-			}
+			// If we couldn't find an alternative pivot
+			if (!foundAltPivot)
+				pivotC++; // Move right one column
 		}
-	}
-	// Move zero rows to bottom of matrix
-	for (int r = 0; r < n-1; r++) {
-		// If zero row
-		if (allEntriesEqual(0, matrix[r], m)) {
-			swapRows(matrix, m, r, r+1);
-			++numRowSwaps;
+		// PIVOT EXISTS AT (pivotR, pivotC)
+		else {
+			// Zero coefs of other rows in this column
+			for (int r = pivotR + 1; r < n; r++) {
+				if (matrix[r][pivotC] != 0) {
+					double coef = - matrix[r][pivotC] / matrix[pivotR][pivotC];
+					addVectors(matrix[r], matrix[pivotR], m, coef);
+				}
+			}
+			// Move to next default pivot location
+			pivotC++;
+			pivotR++;
 		}
 	}
 	return numRowSwaps;
