@@ -110,6 +110,13 @@ double** createMatrix(int n, int m) {
 	return mat;
 }
 
+void freeMatrix(double **matrix, int n) {
+	for (int r = 0; r < n; r++) {
+		free(matrix[r]);
+	}
+	free(matrix);
+}
+
 double** copyMatrix(double **mat, int n, int m) {
 	double **copy = createMatrix(n, m);
 	for (int r = 0; r < n; r++) {
@@ -130,9 +137,9 @@ int ref(double **matrix, int n, int m) {
 	int numRowSwaps = 0;
 
 	int pivotR = 0, pivotC = 0;
-	while (pivotR < n && pivotC < n) {		
+	while (pivotR < n && pivotC < m) {		
 		// NO PIVOT AT (pivotR, pivotC)
-		if (matrix[pivotR][pivotC] == 0) {
+		if (smoothenZero(matrix[pivotR][pivotC]) == 0) {
 			// Try to find row with coef in same col and swap
 			bool foundAltPivot = false;
 			for (int r = pivotR + 1; r < n; r++) {
@@ -164,9 +171,21 @@ int ref(double **matrix, int n, int m) {
 	return numRowSwaps;
 }
 
-void rref(double **matrix, int n, int m) {
-	ref(matrix, n, m);
+int rank(double **mat, int n, int m) {
+	double **copy = copyMatrix(mat, n, m);
+	ref(copy, n, m);
+	int numPivots = 0;
+	for (int c = 0; c < fmin(n, m); c++) {
+		if (smoothenZero(copy[c][c]) != 0)
+			numPivots++;
+	}
+	freeMatrix(copy, n);
+	return numPivots;
+}
 
+void rref(double **matrix, int n, int m) {
+	ref(matrix, n, m); // Reduce
+	
 	for (int c = fmin(n, m) - 1; c >= 0; c--) {
 		if (smoothenZero(matrix[c][c]) == 0) {
 			continue;
@@ -177,13 +196,6 @@ void rref(double **matrix, int n, int m) {
 			addVectors(matrix[r], matrix[c], m, scalar);
 		}
 	}
-}
-
-void freeMatrix(double **matrix, int n) {
-	for (int r = 0; r < n; r++) {
-		free(matrix[r]);
-	}
-	free(matrix);
 }
 
 double diagonalProduct(double **mat, int n) {
@@ -203,18 +215,6 @@ double** transpose(double **mat, int n, int m) {
 		}
 	}
 	return trans;
-}
-
-int rank(double **mat, int n, int m) {
-	double **copy = copyMatrix(mat, n, m);
-	ref(copy, n, m);
-	int numPivots = 0;
-	for (int c = 0; c < fmin(n, m); c++) {
-		if (smoothenZero(copy[c][c]) != 0)
-			numPivots++;
-	}
-	freeMatrix(copy, n);
-	return numPivots;
 }
 
 bool isUpperTriangular(double **mat, int n) {
