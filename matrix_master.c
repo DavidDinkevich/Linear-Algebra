@@ -175,9 +175,13 @@ int rank(double **mat, int n, int m) {
 	double **copy = copyMatrix(mat, n, m);
 	ref(copy, n, m);
 	int numPivots = 0;
-	for (int c = 0; c < fmin(n, m); c++) {
-		if (smoothenZero(copy[c][c]) != 0)
-			numPivots++;
+	int pivotR = 0, pivotC = 0;
+	while (pivotR < n && pivotC < m) {
+		if (smoothenZero(copy[pivotR][pivotC]) != 0) {
+			++numPivots;
+			++pivotR;
+		}
+		++pivotC;
 	}
 	freeMatrix(copy, n);
 	return numPivots;
@@ -186,6 +190,7 @@ int rank(double **mat, int n, int m) {
 void rref(double **matrix, int n, int m) {
 	ref(matrix, n, m); // Reduce
 	int rnk = rank(matrix, n, m);
+	printf("Rank: %d\n", rnk);
 	
 	// Start at first element of last non-zero row
 	int pivotR = rnk-1, pivotC = 0;
