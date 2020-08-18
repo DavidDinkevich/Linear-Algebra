@@ -434,32 +434,19 @@ double** getNullSpace(double **mat, int n, int m, int *dimNullSpc) {
 		return zeroSpace;
 	}
 
-	// Row reduce matrix. All the pivotless columns are located on the right
-	// of the matrix.
-	rref(mat, n, m);
+	double **transp = transpose(mat, n, m);
+	double **identity = createIdentityMatrix(fmax(n, m));
+	augmentedRREF(transp, m, n, identity, fmax(n, m), fmax(n, m));
+
 	// Get dimension of null space
 	*dimNullSpc = m - rnk;
-	// Create matrix that will hold null space basis
 	double **nullSpcBasis = createMatrix(*dimNullSpc, m);
-	// Transpose the matrix for easier access to pivotless-columns
-	// (which will now be rows at the bottom of the matrix)
-	double **transp = transpose(mat, n, m);
-
-	// Fill in nullSpcBasis with these pivotless cols, negate them,
-	// and put 1 where the pivot should have been
 	for (int r = 0; r < *dimNullSpc; r++) {
-		// Copy the vector into the null space basis matrix
-		setVector(nullSpcBasis[r], transp[r + rnk], fmin(n, m));
-		// Zero the remainder of the row in the null space basis matrix
-		// (if n < m)
-		zeroVector(nullSpcBasis[r] + n, m - n);
-		// Negate the vector
-		multVector(nullSpcBasis[r], m, -1);
-		// Place the missing pivot
-		nullSpcBasis[r][r + rnk] = 1;
+		setVector(nullSpcBasis[r], identity[r + rnk], m);
 	}
 
-	freeMatrix(transp, m); // m is num rows of the transpose
+	freeMatrix(transp, m);
+	freeMatrix(identity, fmax(n, m));
 
 	return nullSpcBasis;
 }
@@ -557,7 +544,7 @@ void printVector(double *vector, int n, bool withParenthesis) {
 			printf(" ");
 	}
 	if (withParenthesis)
-		printf(")");
+		printf((n > 0 && vector[0] >= 0) ? " )" : " )");;
 }
 
 void printMatrix(double **matrix, int n, int m) {
