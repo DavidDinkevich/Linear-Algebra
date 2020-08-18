@@ -358,6 +358,14 @@ double** multMatrices(double **m1, double **m2, int n, int p, int r) {
 	return res;
 }
 
+double **getInverse(double **mat, int n) {
+	double **copy = copyMatrix(mat, n, n);
+	double **identity = createIdentityMatrix(n);
+	augmentedRREF(copy, n, n, identity, n, n);
+	freeMatrix(copy, n);
+	return identity;
+}
+
 /*
 	Params:
 	- vector: vector to project
@@ -668,11 +676,10 @@ void runInvertMatrixDialog() {
 	} else if (smoothenZero(rowReductionDet(matrix, n)) == 0) {
 		printf("The given matrix is not invertible.\n");
 	} else {
-		double **identity = createIdentityMatrix(n);
-		augmentedRREF(matrix, n, n, identity, n, n);
+		double **inv = getInverse(matrix, n);
 		printf("Inverse:\n");
-		printMatrix(identity, n, n);
-		freeMatrix(identity, n);
+		printMatrix(inv, n, n);
+		freeMatrix(inv, n);
 	}
 	freeMatrix(matrix, n);
 }
