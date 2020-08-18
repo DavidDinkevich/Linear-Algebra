@@ -117,6 +117,16 @@ void freeMatrix(double **matrix, int n) {
 	free(matrix);
 }
 
+double **createIdentityMatrix(int n) {
+	double **identity = createMatrix(n, n);
+	for (int r = 0; r < n; r++) {
+		for (int c = 0; c < n; c++) {
+			identity[r][c] = (r == c) ? 1 : 0;
+		}
+	}
+	return identity;
+}
+
 double** copyMatrix(double **mat, int n, int m) {
 	double **copy = createMatrix(n, m);
 	for (int r = 0; r < n; r++) {
@@ -133,19 +143,34 @@ void swapRows(double **matrix, int m, int row1, int row2) {
 	}
 }
 
-int ref(double **matrix, int n, int m) {
+/*
+	Represents the row reduction of an augmented matrix.
+	"mat1" is of size (n1 x m1)
+	"mat2" is of size (n2 x m2)
+	If "mat2" is NULL, only "mat1" will be row reduced.
+	PRECONDITION: n1 <= n2
+*/
+int augmentedREF(double **mat1, int n1, int m1, double **mat2, int n2, int m2) {
+	if (mat2 != NULL && n1 > n2) {
+		printf("ERROR: invalid dimensions for augmented matrix.\n");
+		return 0;
+	}
 	int numRowSwaps = 0;
 
 	int pivotR = 0, pivotC = 0;
-	while (pivotR < n && pivotC < m) {		
+	while (pivotR < n1 && pivotC < m1) {		
 		// NO PIVOT AT (pivotR, pivotC)
-		if (smoothenZero(matrix[pivotR][pivotC]) == 0) {
+		if (smoothenZero(mat1[pivotR][pivotC]) == 0) {
 			// Try to find row with coef in same col and swap
 			bool foundAltPivot = false;
-			for (int r = pivotR + 1; r < n; r++) {
-				if (matrix[r][pivotC] != 0) {
+			for (int r = pivotR + 1; r < n1; r++) {
+				if (mat1[r][pivotC] != 0) {
 					foundAltPivot = true;
-					swapRows(matrix, m, pivotR, r);
+					// mat1
+					swapRows(mat1, m1, pivotR, r);
+					// mat2
+					if (mat2 != NULL)
+						swapRows(mat2, m2, pivotR, r);
 					++numRowSwaps;
 					break;
 				}
@@ -157,10 +182,14 @@ int ref(double **matrix, int n, int m) {
 		// PIVOT EXISTS AT (pivotR, pivotC)
 		else {
 			// Zero coefs of other rows in this column
-			for (int r = pivotR + 1; r < n; r++) {
-				if (matrix[r][pivotC] != 0) {
-					double coef = - matrix[r][pivotC] / matrix[pivotR][pivotC];
-					addVectors(matrix[r], matrix[pivotR], m, coef);
+			for (int r = pivotR + 1; r < n1; r++) {
+				if (mat1[r][pivotC] != 0) {
+					double coef = - mat1[r][pivotC] / mat1[pivotR][pivotC];
+					// mat1
+					addVectors(mat1[r], mat1[pivotR], m1, coef);
+					// mat2
+					if (mat2 != NULL)
+						addVectors(mat2[r], mat2[pivotR], m2, coef);
 				}
 			}
 			// Move to next default pivot location
@@ -169,6 +198,10 @@ int ref(double **matrix, int n, int m) {
 		}
 	}
 	return numRowSwaps;
+}
+
+int ref(double **matrix, int n, int m) {
+	return augmentedREF(matrix, n, m, NULL, 0, 0); // matrix is not augmented
 }
 
 int rank(double **mat, int n, int m) {
@@ -187,31 +220,56 @@ int rank(double **mat, int n, int m) {
 	return numPivots;
 }
 
-void rref(double **matrix, int n, int m) {
-	ref(matrix, n, m); // Reduce
-	int rnk = rank(matrix, n, m);
-	printf("Rank: %d\n", rnk);
+/*
+	Represents the row reduction of an augmented matrix.
+	"mat1" is of size (n1 x m1)
+	"mat2" is of size (n2 x m2)
+	If "mat2" is NULL, only "mat1" will be row reduced.
+	PRECONDITION: n1 <= n2
+*/
+void augmentedRREF(double **mat1, int n1, int m1, double **mat2, int n2, int m2) {
+	if (mat2 != NULL && n1 > n2) {
+		printf("ERROR: invalid dimensions for augmented matrix.\n");
+		return;
+	}
+	augmentedREF(mat1, n1, m1, mat2, n2, m2); // Reduce
+	int rnk = rank(mat1, n1, m1);
 	
 	// Start at first element of last non-zero row
 	int pivotR = rnk-1, pivotC = 0;
 
 	while (pivotR >= 0) {
 		// NO PIVOT AT (pivotR, pivotC)
-		if (smoothenZero(matrix[pivotR][pivotC]) == 0) {
-			pivotC = (pivotC + 1) % m; // Move c to the right
+		if (smoothenZero(mat1[pivotR][pivotC]) == 0) {
+			pivotC = (pivotC + 1) % m1; // Move c to the right
 		}
 		// PIVOT EXISTS
 		else {
 			// Divide row by pivot
-			multVector(matrix[pivotR], m, 1 / matrix[pivotR][pivotC]);
+			double pivot = mat1[pivotR][pivotC];
+			// mat1
+			multVector(mat1[pivotR], m1, 1 / pivot);
+			// mat2
+			if (mat2 != NULL)
+				multVector(mat2[pivotR], m2, 1 / pivot);
+
 			for (int r = pivotR - 1; r >= 0; r--) {
-				addVectors(matrix[r], matrix[pivotR], m, - matrix[r][pivotC]);
+				double coef = - mat1[r][pivotC];
+				// mat1
+				addVectors(mat1[r], mat1[pivotR], m1, coef);
+				// mat2
+				if (mat2 != NULL)
+					addVectors(mat2[r], mat2[pivotR], m2, coef);
 			}
 			// Move to next starting pivot location
 			pivotR--;
 			pivotC = 0;
 		}
 	}
+}
+
+void rref(double **matrix, int n, int m) {
+	augmentedREF(matrix, n, m, NULL, 0, 0); // matrix is not augmented
 }
 
 double diagonalProduct(double **mat, int n) {
@@ -485,7 +543,8 @@ void printVector(double *vector, int n, bool withParenthesis) {
 	if (withParenthesis)
 		printf("(");
 	for (int i = 0; i < n; i++) {
-		printf("%0.3f", smoothenZero(vector[i]));
+		double smoothened = smoothenZero(vector[i]);
+		printf(smoothened >= 0 ? " %0.3f" : "%0.3f", smoothened);
 		if (i < n-1)
 			printf(" ");
 	}
@@ -594,6 +653,26 @@ void runDetDialog() {
 		printf("Must input square matrix.\n");
 	} else {
 		printf("det(): %lf\n", smoothenZero(rowReductionDet(matrix, n)));
+	}
+	freeMatrix(matrix, n);
+}
+
+void runInvertMatrixDialog() {
+	int n, m;
+	double **matrix = runMatrixInputDialog(&n, &m);
+	if (matrix == NULL) {
+		return;
+	}
+	if (n != m) {
+		printf("Must input square matrix.\n");
+	} else if (smoothenZero(rowReductionDet(matrix, n)) == 0) {
+		printf("The given matrix is not invertible.\n");
+	} else {
+		double **identity = createIdentityMatrix(n);
+		augmentedRREF(matrix, n, n, identity, n, n);
+		printf("Inverse:\n");
+		printMatrix(identity, n, n);
+		freeMatrix(identity, n);
 	}
 	freeMatrix(matrix, n);
 }
@@ -837,13 +916,14 @@ int main() {
 		printf("1. Reduce to row echelon form (REF)\n");
 		printf("2. Reduce to reduced row echelon form (RREF)\n");
 		printf("3. Determinant\n");
-		printf("4. Null Space\n");
-		printf("5. Adjoint\n");
-		printf("6. Orthogonal Projection\n");
-		printf("7. Gram-Schmidt\n");
-		printf("8. Mult Matrices\n");
-		printf("9. QR Decomposition\n");
-		printf("10. Eigenvalues\n");
+		printf("4. Invert Matrix\n");
+		printf("5. Null Space\n");
+		printf("6. Adjoint\n");
+		printf("7. Orthogonal Projection\n");
+		printf("8. Gram-Schmidt\n");
+		printf("9. Mult Matrices\n");
+		printf("10. QR Decomposition\n");
+		printf("11. Eigenvalues\n");
 		printf("0: Quit\n");
 		printf("Input:\n");
 		input = readInt();
@@ -852,13 +932,14 @@ int main() {
 			case 1: runREFDialog(); break;
 			case 2: runRREFDialog(); break;
 			case 3: runDetDialog(); break;
-			case 4: runNullSpaceDialog(); break;
-			case 5: runAdjointDialog(); break;
-			case 6: runOrthoProjectionDialog(); break;
-			case 7: runGramSchmidtDialog(); break;
-			case 8: runMultMatricesDialog(); break;
-			case 9: runQRDecompDialog(); break;
-			case 10: runEigenvaluesDialog(); break;
+			case 4: runInvertMatrixDialog(); break;
+			case 5: runNullSpaceDialog(); break;
+			case 6: runAdjointDialog(); break;
+			case 7: runOrthoProjectionDialog(); break;
+			case 8: runGramSchmidtDialog(); break;
+			case 9: runMultMatricesDialog(); break;
+			case 10: runQRDecompDialog(); break;
+			case 11: runEigenvaluesDialog(); break;
 			case 0: break;
 			default:
 				printf("Invalid input. Try again:\n");
